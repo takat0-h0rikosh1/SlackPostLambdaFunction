@@ -16,7 +16,7 @@ class SlackClient(config: Config) {
       .url(Url)
       .post(body)
       .addHeaders(
-        HeaderNames.AUTHORIZATION -> s"bearer $ApiToken",
+        HeaderNames.AUTHORIZATION -> s"Bearer $ApiToken",
         HeaderNames.CONTENT_TYPE -> MimeTypes.JSON
       )
   }
@@ -24,9 +24,11 @@ class SlackClient(config: Config) {
   def post(message: Message)(implicit ec: ExecutionContext): Future[Unit] =
     Gigahorse.withHttp(Gigahorse.config) { http =>
       http
-        .run(requestWithBody(message.getBody), Gigahorse.asEither)
-        .map(_.map(_ => ()))
+        .run(requestWithBody(message.getBody), Gigahorse.asString)
+        .flatMap { s =>
+          SlackAPIResponse
+            .fromJsString(s)
+            .fold(e => Future.failed(e), _ => Future.successful(()))
+        }
     }
-
 }
-
