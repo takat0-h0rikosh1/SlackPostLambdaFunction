@@ -14,3 +14,7 @@ project/plugins/project/
 
 # Serverless directories
 .serverless
+
+.idea/
+.envrc
+.credentials.csv
