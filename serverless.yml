@@ -1,0 +1,45 @@
+service: sample-slack-post
+
+frameworkVersion: "=1.30.0"
+
+provider:
+  name: aws
+  runtime: java8
+  stage: ${opt:stage, 'dev'}
+  region: ap-northeast-1
+  iamRoleStatements:
+    -  Effect: "Allow"
+       Action:
+       - "sqs:*"
+       Resource:
+         Fn::ImportValue: ${self:service}:${self:provider.stage}:SampleQueueArn
+
+package:
+  artifact: target/scala-2.12/hello.jar
+
+functions:
+  sample:
+    handler: sample.SampleHandler
+    name: sample-slack-post-function-${self:provider.stage}
+    timeout: 300
+    memorySize: 256
+    environment:
+      QUEUE_URL:
+        Ref: sampleQueue
+      SLACK_API_TOKEN: "slack api token required"
+
+resources:
+  Resources:
+    sampleQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: sample-slack-post-${self:provider.stage}
+        ReceiveMessageWaitTimeSeconds: 5
+        VisibilityTimeout: 10
+  Outputs:
+    SampleQueueArn:
+      Description: The ARN for the User's Table
+      Value:
+        "Fn::GetAtt": [ sampleQueue, Arn ]
+      Export:
+        Name: ${self:service}:${self:provider.stage}:SampleQueueArn
