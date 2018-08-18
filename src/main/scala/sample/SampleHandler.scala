@@ -14,7 +14,6 @@ object SampleHandler {
   class SampleRequest(@BeanProperty var value: String) {
     def this() = this("")
   }
-
   case class SampleResponse(
       @BeanProperty value: String = "slack message post done.")
 }
@@ -29,13 +28,17 @@ class SampleHandler extends RequestHandler[SampleRequest, SampleResponse] {
 
   def handleRequest(input: SampleRequest, context: Context): SampleResponse = {
     val eventualUnit = for {
-      messages <- sqsClient.receive.map{ m => println(m.size); m }
+      messages <- sqsClient.receive
       eventualMessages = messages.map(m => slackClient.post(m).map(_ => m))
       eventualUnits = eventualMessages.map(_.flatMap(sqsClient.delete))
-      result = eventualUnits.map(_.recover({ case NonFatal(e) => e.printStackTrace()}))
+      result = eventualUnits.map(_.recover(printStackTraceInCaseOfNonFatal()))
       _ <- Future.sequence(result)
     } yield SampleResponse()
 
     Await.result(eventualUnit, 300.second)
+  }
+
+  private def printStackTraceInCaseOfNonFatal(): PartialFunction[Throwable, Unit] = {
+    case NonFatal(e) => e.printStackTrace()
   }
 }
