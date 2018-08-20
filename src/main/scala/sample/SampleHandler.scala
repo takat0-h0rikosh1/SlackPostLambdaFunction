@@ -31,14 +31,14 @@ class SampleHandler extends RequestHandler[SampleRequest, SampleResponse] {
       messages <- sqsClient.receive
       eventualMessages = messages.map(m => slackClient.post(m).map(_ => m))
       eventualUnits = eventualMessages.map(_.flatMap(sqsClient.delete))
-      result = eventualUnits.map(_.recover(printStackTraceInCaseOfNonFatal()))
+      result = eventualUnits.map(_.recover(printStackTraceInCaseOfFailure()))
       _ <- Future.sequence(result)
     } yield SampleResponse()
 
     Await.result(eventualUnit, 300.second)
   }
 
-  private def printStackTraceInCaseOfNonFatal(): PartialFunction[Throwable, Unit] = {
+  private def printStackTraceInCaseOfFailure(): PartialFunction[Throwable, Unit] = {
     case NonFatal(e) => e.printStackTrace()
   }
 }

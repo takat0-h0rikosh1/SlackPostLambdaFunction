@@ -1,6 +1,6 @@
 service: sample-slack-post
 
-frameworkVersion: "=1.30.0"
+frameworkVersion: ">= 1.30.1"
 
 provider:
   name: aws
@@ -38,7 +38,7 @@ resources:
         VisibilityTimeout: 10
   Outputs:
     SampleQueueArn:
-      Description: The ARN for the User's Table
+      Description: The ARN for the Sample Queue
       Value:
         "Fn::GetAtt": [ sampleQueue, Arn ]
       Export:
